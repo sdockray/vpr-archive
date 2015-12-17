@@ -150,7 +150,7 @@ class Station(object):
         
         @cherrypy.expose
         def default(self, *args, **kwargs):
-                return ''
+                return html % ''
 
         @cherrypy.expose
         def contents(self):
