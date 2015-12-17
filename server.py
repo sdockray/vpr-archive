@@ -2,6 +2,7 @@
 import os, sys
 import cherrypy
 from datetime import datetime, timedelta
+from operator import itemgetter
 #from mutagen.mp3 import MP3
 from tinytag import TinyTag
 from ConfigParser import SafeConfigParser
@@ -58,11 +59,11 @@ def db_get(value, key='_id'):
 # Returns all the mp3s stored in the db 
 def db_get_all():
         global db
-        data = {}
+        data = []
         mp3s = db.mp3s.find()
         for mp3 in mp3s:
-                data[mp3['fullpath']] = mp3
-        return sorted(data, key=lambda k: k['date'], reverse=True) 
+                data.append(mp3)
+        return data
 
 # Inserts a record
 def db_insert(data):
@@ -108,9 +109,9 @@ def db_check():
                         data['duration'] = "%d:%02d:%02d" % (h, m, s)
                         db_insert(data)
         delete = []
-        for fullpath in db_get_all():
-                if not os.path.exists(fullpath):
-                        delete.append(fullpath)
+        for mp3 in db_get_all():
+                if not os.path.exists(mp3['fullpath']):
+                        delete.append(mp3['fullpath'])
         for d in delete:
                 print 'removing: ', d
                 db_remove(d)
@@ -132,9 +133,10 @@ def save_mp3_info(mp3, title, description):
 def render_html(mp3s, show_edit_links=False):
         global SERVER_PATH, STREAM_URL, ROOT_DIR
         mp3s_html = ''
-        for fullpath in mp3s:
+        mp3s_sorted = sorted(mp3s, key=lambda k: k['date'], reverse=True) 
+        for info in mp3s_sorted:
+                fullpath = info['fullpath']
                 mp3 = fullpath.replace(ROOT_DIR, '')
-                info = mp3s[fullpath]
                 a = '<a href="%s%s.m3u">%s</a> %s (%s)' % (STREAM_URL, mp3, info['title'], info['date'], info['duration'])
                 if show_edit_links:
                         a = "%s <a href='%sedit?id=%s'>edit</a>" % (a, SERVER_PATH, info['_id'])
@@ -315,16 +317,18 @@ def application(environ, start_response):
 
 # Starting things up
 if __name__ == '__main__':
+        #try:
+        load_config()
+        init_db()
+        db_check()
+        reload_template()
+        conf = {}
+        cherrypy.config.update({
+                'server.socket_port': SERVER_PORT,
+        })
+        app = cherrypy.tree.mount(Station(), SERVER_PATH)
+        cherrypy.quickstart(app, config=conf)
         try:
-                load_config()
-                init_db()
-                db_check()
-                reload_template()
-                conf = {}
-                cherrypy.config.update({
-                        'server.socket_port': SERVER_PORT,
-                })
-                app = cherrypy.tree.mount(Station(), SERVER_PATH)
-                cherrypy.quickstart(app, config=conf)
+                pass
         except:
                 print "Station couldn't start :("                        
