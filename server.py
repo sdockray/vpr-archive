@@ -59,7 +59,7 @@ def db_get(value, key='_id'):
 def db_get_all():
         global db
         data = {}
-        mp3s = db.mp3s.find().sort('date', pymongo.DESCENDING)
+        mp3s = db.mp3s.find(sort=[('date', pymongo.DESCENDING)])
         for mp3 in mp3s:
                 data[mp3['fullpath']] = mp3
         return data
