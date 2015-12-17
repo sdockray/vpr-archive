@@ -150,6 +150,10 @@ class Station(object):
         
         @cherrypy.expose
         def default(self, *args, **kwargs):
+                return ''
+
+        @cherrypy.expose
+        def contents(self):
                 mp3s = db_get_all()
                 return render_html(mp3s)
 
@@ -256,7 +260,7 @@ class Station(object):
         @cherrypy.expose
         def posted(self, mp3, title, description):
                 save_mp3_info(mp3, title, description)
-                content = "saved! <a href='%s'>back to the list</a>" % SERVER_PATH
+                content = "saved! <a href='%s/contents'>back to the list</a>" % SERVER_PATH
                 return html % content
 
         @cherrypy.expose
